@@ -1,0 +1,37 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.0.1",
+	"EngineVersion" : "5.5.0",
+	"FriendlyName": "State Machine System",
+	"Description": "",
+	"Category": "GVUEDK",
+	"CreatedBy": "Gabevlogd",
+	"CreatedByURL": "https://gabevlogd.github.io/",
+	"DocsURL": "https://brass-keyboard-cc2.notion.site/State-Machine-System-1f1c9702a85d8084aef8c3028f882a6e",
+	"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/46eb1dda-0fb4-47de-b528-7803f6988d4b",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "StateMachineSystem",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [ "Win64" ]
+		}
+	],
+	"SupportURL": "",
+	"Plugins": [
+		{
+			"Name": "GameplayTagsEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": false,
+			"Optional": true
+		}
+	]
+}
