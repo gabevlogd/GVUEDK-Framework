@@ -21,7 +21,7 @@ It provides a collection of modular systems and utilities that I’ve built to s
 
 
 ## 🕹 Origin
-The first version of GVUEDK was created during the development of **_The Negative Edge_**, a **third-person action arena shooter**, where I worked as a:  
+The first version of GVUEDK was created during the development of **_[The Negative Edge](https://eventhorizonschool.itch.io/the-negative-edge)_**, a **third-person action arena shooter**, where I worked as a:  
 - 🎯 **Gameplay Programmer**  
 - 🎥 **3C (Camera, Controller, Character) Programmer**  
 
