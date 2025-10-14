@@ -60,6 +60,7 @@ GVUEDK_Framework
         ├── PopUpSystem
         ├── ResourceAttributeSystem
         └── StateMachineSystem
+        └── SteamAchievementsSystem
 ```
 
 - **AimAssistSystem** → Context-aware targeting assistance for improved aiming accuracy with gamepad.  
@@ -74,7 +75,8 @@ GVUEDK_Framework
 - **InteractionSystem** → Context-based interaction with world objects and entities.
 - **PopUpSystem** → Modular UI pop-ups and notifications. 
 - **ResourceAttributeSystem** → Modular stat and resource management (e.g., health, stamina).  
-- **[StateMachineSystem](https://github.com/gabevlogd/StateMachineSystem)** → Structured actor state handling for consistent behavior.  
+- **[StateMachineSystem](https://github.com/gabevlogd/StateMachineSystem)** → Structured actor state handling for consistent behavior.
+- **SteamAchievementsSystem** → Subsystem for fast Steam achievements managing.  
 
 
 ## 🛠 Unreal Engine Compatibility
