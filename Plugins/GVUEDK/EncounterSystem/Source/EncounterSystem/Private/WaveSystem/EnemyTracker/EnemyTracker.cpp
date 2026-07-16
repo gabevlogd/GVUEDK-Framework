@@ -30,6 +30,8 @@ void UEnemyTracker::Init(UWaveManager* InWaveManager)
 		UE_LOG(LogWaveManagerSubsystem, Error, TEXT("EnemyTracker Init: Failed to get SpawnManager subsystem."));
 	}
 
+	bAcceptingSpawns = true;
+
 	// Listen for tracked enemies being destroyed to unregister them
 	UTrackerComponent::OnTrackedEnemyDestroyed->AddUniqueDynamic(this, &UEnemyTracker::UnregisterEnemy);
 	
@@ -37,42 +39,82 @@ void UEnemyTracker::Init(UWaveManager* InWaveManager)
 	
 	// Listen for wave completion/cancellation to stop tracking enemies
 	WaveManager->OnWaveCompleted.AddUniqueDynamic(this, &UEnemyTracker::StopEnemyTracking);
-	WaveManager->OnWaveCanceled.AddUniqueDynamic(this, &UEnemyTracker::StopEnemyTracking);
 
 	AssociatedWaveID = WaveManager->GetCurrentWaveID();
 }
 
+void UEnemyTracker::Deinitialize()
+{
+	StopEnemyTracking(nullptr, -1);
+	UTrackerComponent::OnTrackedEnemyDestroyed->RemoveDynamic(this, &UEnemyTracker::UnregisterEnemy);
+	WaveManager = nullptr;
+	TrackedEnemies.Empty();
+}
+
 void UEnemyTracker::RegisterEnemy(AActor* SpawnedEnemy)
 {
-	if (SpawnedEnemy->FindComponentByClass(UTrackerComponent::StaticClass()))
+	if (!IsValid(SpawnedEnemy) || !bAcceptingSpawns)
 	{
-		TrackedEnemies.AddUnique(SpawnedEnemy);
+		return;
 	}
+	
+	if (!SpawnedEnemy->FindComponentByClass(UTrackerComponent::StaticClass()))
+	{
+		return;
+	}
+	
+	UTrackerComponent::OnTrackedEnemyDestroyed->AddUniqueDynamic(this, &UEnemyTracker::UnregisterEnemy);
+	
+	TrackedEnemies.AddUnique(SpawnedEnemy);
 }
 
 void UEnemyTracker::UnregisterEnemy(AActor* DeadEnemy)
 {
-	if (TrackedEnemies.Contains(DeadEnemy))
+	if (!IsValid(DeadEnemy))
 	{
-		TrackedEnemies.Remove(DeadEnemy);
-		OnEnemyUnregistered.Broadcast(DeadEnemy);
+		return;
 	}
 
-	// If no tracked enemies are left, broadcast the event, unless there are pending async spawns to avoid premature completion
-	if (TrackedEnemies.Num() == 0 && !WaveManager->HasPendingAsyncSpawns())
+	const int32 RemovedCount = TrackedEnemies.RemoveSingleSwap(DeadEnemy);
+	
+	if (RemovedCount == 0)
+	{
+		return;
+	}
+
+	OnEnemyUnregistered.Broadcast(DeadEnemy);
+	
+	const bool bHasPendingAsyncSpawns = IsValid(WaveManager) && WaveManager->HasPendingAsyncSpawns();
+	
+	if (TrackedEnemies.IsEmpty() && !bHasPendingAsyncSpawns)
+	{
+		OnNoTrackedEnemiesLeft.Broadcast(AssociatedWaveID);
+	}
+	
+	if (TrackedEnemies.IsEmpty() && !bAcceptingSpawns)
 	{
 		UTrackerComponent::OnTrackedEnemyDestroyed->RemoveDynamic(this, &UEnemyTracker::UnregisterEnemy);
-		OnNoTrackedEnemiesLeft.Broadcast(AssociatedWaveID);
 	}
 }
 
 void UEnemyTracker::StopEnemyTracking(const UWaveData* WaveData, const int32 WaveIndex)
 {
-	WaveManager->OnWaveCompleted.RemoveDynamic(this, &UEnemyTracker::StopEnemyTracking);
-	WaveManager->OnWaveCanceled.RemoveDynamic(this, &UEnemyTracker::StopEnemyTracking);
-	
-	if (USpawnManager* SpawnManager = GetWorld()->GetSubsystem<USpawnManager>())
+	bAcceptingSpawns = false;
+	if (IsValid(WaveManager))
 	{
-		SpawnManager->OnEnemySpawned.RemoveDynamic(this, &UEnemyTracker::RegisterEnemy);
+		WaveManager->OnWaveCompleted.RemoveDynamic(this, &UEnemyTracker::StopEnemyTracking);
+	}
+
+	if (IsValid(GetWorld()))
+	{
+		if (USpawnManager* SpawnManager = GetWorld()->GetSubsystem<USpawnManager>())
+		{
+			SpawnManager->OnEnemySpawned.RemoveDynamic(this, &UEnemyTracker::RegisterEnemy);
+		}
+	}
+
+	if (TrackedEnemies.IsEmpty())
+	{
+		UTrackerComponent::OnTrackedEnemyDestroyed->RemoveDynamic(this, &UEnemyTracker::UnregisterEnemy);
 	}
 }

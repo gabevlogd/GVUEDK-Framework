@@ -7,7 +7,7 @@ UResourceAttributeBase::UResourceAttributeBase(): bCanRegen(false), bStopRegenOn
                                                   MaxValue(1), MinValue(0), bUseStartingValue(false), StartingValue(1),
                                                   RegenSpeed(1),
                                                   RegenDelay(1), StartRegenValue(1 - KINDA_SMALL_NUMBER),
-                                                  CurrentValue(1), bMustRegen(false)
+                                                  CurrentValue(1), bMustRegen(false), bCanUpdateValue(true)
 {
 	Owner = nullptr;
 }
@@ -26,18 +26,11 @@ void UResourceAttributeBase::Initialize(AActor* InOwner, const FGameplayTag InTa
 	
 	if (bCanRegen)
 	{
-		//CheckOrder(StartRegenValue, StopRegenValue);
-		
 		if (!FMath::IsWithinInclusive(StartRegenValue, MinValue, MaxValue))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Trigger regen value is not within the min and max value range, setting it to the min value."));
 			StartRegenValue = MinValue;
 		}
-		// if (!FMath::IsWithinInclusive(StopRegenValue, MinValue, MaxValue))
-		// {
-		// 	UE_LOG(LogTemp, Warning, TEXT("Stop regen value is not within the min and max value range, setting it to the max value."));
-		// 	StopRegenValue = MaxValue;
-		// }
 	}
 
 	if (bUseStartingValue)
@@ -48,7 +41,8 @@ void UResourceAttributeBase::Initialize(AActor* InOwner, const FGameplayTag InTa
 
 void UResourceAttributeBase::SetValue(const float NewValue)
 {
-	//if (CurrentValue == NewValue) return;
+	if (!bCanUpdateValue) return;
+	if (CurrentValue == NewValue) return;
 
 	const float ValueBeforeChange = CurrentValue;
 
@@ -76,12 +70,18 @@ void UResourceAttributeBase::SetValue(const float NewValue)
 		{
 			StopRegen();
 		}
-		if (!bMustRegen /*&& CurrentValue <= StartRegenValue*/)
+		if (!bMustRegen)
 		{
 			StartRegen();
 		}
 	}
 	
+}
+
+void UResourceAttributeBase::SetValueImmediately(const float NewValue)
+{
+	CurrentValue = NewValue;
+	OnValueChangedImmediately.Broadcast();
 }
 
 bool UResourceAttributeBase::AddValue(const float Value)
@@ -105,6 +105,11 @@ bool UResourceAttributeBase::IsFull() const
 	return CurrentValue == MaxValue;
 }
 
+bool UResourceAttributeBase::IsEmpty() const
+{
+	return CurrentValue <= MinValue;
+}
+
 void UResourceAttributeBase::SetMaxValue(const float NewMaxValue)
 {
 	MaxValue = FMath::Max(NewMaxValue, MinValue + KINDA_SMALL_NUMBER);
@@ -117,6 +122,16 @@ void UResourceAttributeBase::SetMaxValue(const float NewMaxValue)
 		StartRegen();
 	}
 	OnMaxValueChanged.Broadcast();
+}
+
+void UResourceAttributeBase::SetCanUpdateValue(const bool NewCanUpdateValue)
+{
+	bCanUpdateValue = NewCanUpdateValue;
+}
+
+bool UResourceAttributeBase::CanUpdateValue()
+{
+	return bCanUpdateValue;
 }
 
 void UResourceAttributeBase::StartRegen()

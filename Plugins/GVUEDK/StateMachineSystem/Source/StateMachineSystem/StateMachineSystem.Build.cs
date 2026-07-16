@@ -27,7 +27,8 @@ public class StateMachineSystem : ModuleRules
 			{
 				"Core",
 				"GameplayTags", 
-				"EnhancedInput"
+				"EnhancedInput",
+				"Projects"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -39,8 +40,7 @@ public class StateMachineSystem : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-				"Projects"
+				"SlateCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

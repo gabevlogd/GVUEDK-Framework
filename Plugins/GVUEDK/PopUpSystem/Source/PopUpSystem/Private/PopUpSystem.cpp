@@ -3,7 +3,7 @@
 #include "PopUpSystem.h"
 
 #include "GameplayTagsManager.h"
-#include "ISettingsModule.h"
+#include "Developer/Settings/Public/ISettingsModule.h"
 #include "PopUpSystemSettings.h"
 
 #define LOCTEXT_NAMESPACE "FPopUpSystemModule"

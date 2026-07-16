@@ -22,6 +22,9 @@ public:
 	void OnInitialize(UWaveManager* InWaveManager, UWaveData* InWaveData, const int32 InWaveIndex);
 
 	UFUNCTION(BlueprintImplementableEvent)
+	void OnFirstWaveStarted(UWaveManager* InWaveManager, UWaveData* InWaveData, const int32 InWaveIndex);
+	
+	UFUNCTION(BlueprintImplementableEvent)
 	void OnWaveStarted(UWaveManager* InWaveManager, UWaveData* InWaveData, const int32 InWaveIndex);
 
 	UFUNCTION(BlueprintImplementableEvent)

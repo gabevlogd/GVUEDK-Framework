@@ -145,4 +145,26 @@ float UEncounterSystemUtility::GetWaveRemainingTime()
 	return -1.f;
 }
 
+float UEncounterSystemUtility::GetAllWavesRemainingTime()
+{
+	if (IsValid(WaveManager))
+	{
+		return WaveManager->GetAllWavesRemainingTime();
+	}
+	
+	UE_LOG(LogEncounterSystemUtility, Warning, TEXT("GetAllWavesRemainingTime called but WaveManager is not initialized"));
+	return -1.f;
+}
+
+bool UEncounterSystemUtility::IsAnyWaveActive()
+{
+	if (IsValid(WaveManager))
+	{
+		return WaveManager->IsAnyWaveActive();
+	}
+	
+	UE_LOG(LogEncounterSystemUtility, Warning, TEXT("IsAnyWaveActive called but WaveManager is not initialized"));
+	return false;
+}
+
 

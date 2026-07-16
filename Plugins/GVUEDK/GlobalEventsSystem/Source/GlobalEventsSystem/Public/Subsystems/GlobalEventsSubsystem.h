@@ -12,7 +12,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogGlobalEventsSystem, All, All);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGlobalEventSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGlobalEventSignatureWithObject, UObject*, Object);
 
-DECLARE_DYNAMIC_DELEGATE(FGloablEvent);
+DECLARE_DYNAMIC_DELEGATE(FGlobalEvent);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FGlobalEventWithObject, UObject*, Object);
 
 UCLASS()
@@ -22,11 +22,11 @@ class GLOBALEVENTSSYSTEM_API UGlobalEventsSubsystem : public UGameInstanceSubsys
 
 public:
 	
-	void BindEvent(const FGameplayTag& EventTag, const FGloablEvent& Event);
+	void BindEvent(const FGameplayTag& EventTag, const FGlobalEvent& Event);
 
 	void BindObjectEvent(const FGameplayTag& EventTag, const FGlobalEventWithObject& Event);
 
-	void UnbindEvent(const FGameplayTag& EventTag, const FGloablEvent& Event);
+	void UnbindEvent(const FGameplayTag& EventTag, const FGlobalEvent& Event);
 
 	void UnbindObjectEvent(const FGameplayTag& EventTag, const FGlobalEventWithObject& Event);
 

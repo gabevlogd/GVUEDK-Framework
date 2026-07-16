@@ -35,12 +35,15 @@ void UAimAssistComponent::EnableAimAssist()
 {
 	if (!IsValid(Controller))
 	{
-		Controller = Cast<APawn>(GetOwner())->GetController();
+		AController* OwnerController = Cast<AController>(GetOwner());
+		Controller = IsValid(OwnerController) ? OwnerController : UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	}
+	
 	if (!IsValid(CameraManager))
 	{
 		CameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	}
+	
 	TargetLostTime = 0.f;
 	TargetDetectionTime = 0.f;
 	CurrentTarget = nullptr;

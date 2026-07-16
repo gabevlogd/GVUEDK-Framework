@@ -35,7 +35,7 @@ struct FTransitionData
 };
 
 
-UCLASS(Abstract, Blueprintable, BlueprintType, EditInlineNew)
+UCLASS(Abstract, Blueprintable, BlueprintType)
 class STATEMACHINESYSTEM_API UStateBase : public UObject
 {
 	GENERATED_BODY()
@@ -57,14 +57,15 @@ protected:
 	TMap<FGameplayTag, FTransitionData> Transitions;
 
 	/**
-     *  Array of tags that represent the states of other state machines that can interrupt this state
+     *  Array of tags that represent the states of other state machines that must interrupt this state
+     *  when they are activated.
      */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "State", meta = (AllowPrivateAccess = "true"))
 	TArray<FGameplayTag> Interrupters;
 
 	/** 
-	 * List of tags that prevent this state from being activated 
- 	 * if any other active state in a different state machine contains one of them.
+	 * List of state's tag that prevent this state from being activated 
+ 	 * if any of them is already active in the same multi-state machine.
  	 * 
  	 * Unlike Interrupters, which forcibly stop a running state, 
  	 * Negators are used to deny the activation of this state 
@@ -107,19 +108,11 @@ protected:
 	//C++ overridable events
 	
 	virtual void NativeOnInitialize(AActor* Context) {}
-	
 	virtual void NativeOnEnter() {}
-	
 	virtual void NativeOnUpdate(const float DeltaTime) {}
-	
-	virtual void NativeOnExit() {}
-
-	/**
-	 *  Returns the tag of the state to transition to (if no transition is needed, return the current state tag or FGameplayTag::EmptyTag)
-	 */
-	virtual FGameplayTag NativeOnHandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value) { return StateTag; }
-
-	virtual FGameplayTag NativeOnInterrupt(const FGameplayTag Interrupter) { return StateTag; }
+	virtual void NativeOnExit(const FGameplayTag& NextStateTag) {}
+	virtual void NativeOnHandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value) {}
+	virtual void NativeOnInterrupt(const FGameplayTag Interrupter) {}
 
 	//Blueprint events
 	
@@ -133,28 +126,21 @@ protected:
 	void OnUpdate(const float DeltaTime);
 	
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnExit();
-
-	/**
-	 *  Returns the tag of the state to transition to (if no transition is needed, return the current state tag or FGameplayTag::EmptyTag)
-	 */
-	UFUNCTION(BlueprintImplementableEvent)
-	FGameplayTag OnHandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value);
+	void OnExit(const FGameplayTag& NextStateTag);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	FGameplayTag OnInterrupt(const FGameplayTag Interrupter);
+	void OnHandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnInterrupt(const FGameplayTag Interrupter);
 
 private:
 	void Initialize(AActor* Context, UStateMachineComponent* StateMachine);
 	void Enter();
 	void Update(const float DeltaTime);
-	void Exit();
-	FGameplayTag HandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value);
-
-	/**
-     *  @return the tag of the state to transition to after the interruption (if the tag is not valid or the same as the interrupted state, the state to transition to will be the entry state)
-     */
-	FGameplayTag Interrupt(const FGameplayTag Interrupter);
+	void Exit(const FGameplayTag& NextStateTag);
+	void HandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value);
+	void Interrupt(const FGameplayTag Interrupter);
 
 #if WITH_EDITOR
 	virtual bool ImplementsGetWorld() const override { return true; }

@@ -17,7 +17,7 @@ void UGlobalEventsUtility::Initialize(UGlobalEventsSubsystem* GlobalEvents)
 	GlobalEventsSubsystem = GlobalEvents;
 }
 
-void UGlobalEventsUtility::BindEvent(const FGameplayTag EventTag, const FGloablEvent& Event)
+void UGlobalEventsUtility::BindEvent(const FGameplayTag EventTag, const FGlobalEvent& Event)
 {
 	if (!IsValid(GlobalEventsSubsystem))
 	{
@@ -39,7 +39,7 @@ void UGlobalEventsUtility::BindObjectEvent(const FGameplayTag EventTag, const FG
 	GlobalEventsSubsystem->BindObjectEvent(EventTag, Event);
 }
 
-void UGlobalEventsUtility::UnbindEvent(const FGameplayTag EventTag, const FGloablEvent& Event)
+void UGlobalEventsUtility::UnbindEvent(const FGameplayTag EventTag, const FGlobalEvent& Event)
 {
 	if (!IsValid(GlobalEventsSubsystem))
 	{

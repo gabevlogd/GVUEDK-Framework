@@ -27,7 +27,6 @@ public class PopUpSystem : ModuleRules
 			{
 				"Core", 
 				"GameplayTags",
-				"Settings"
 			}
 			);
 			
@@ -51,5 +50,10 @@ public class PopUpSystem : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+		
+		if (Target.Configuration != UnrealTargetConfiguration.Shipping)
+		{
+			PublicDependencyModuleNames.Add("Settings");
+		}
 	}
 }

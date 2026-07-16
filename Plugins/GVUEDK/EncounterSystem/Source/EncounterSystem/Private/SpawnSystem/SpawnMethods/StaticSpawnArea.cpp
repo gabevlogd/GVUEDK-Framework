@@ -19,38 +19,49 @@ bool UStaticSpawnArea::Init(USpawnMethod* Template, USpawnManager* InSpawnManage
 
 bool UStaticSpawnArea::FindSpawnLocation(UWorld* World, AActor* ContextActor, FVector& OutLocation)
 {
-	if (!IsValid(World)) return false;
-
-	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World);
-	if (!IsValid(NavSys)) return false;
-		
-	FNavLocation NavLocation;
+	// if (!IsValid(World)) return false;
+	//
+	// UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World);
+	// if (!IsValid(NavSys)) return false;
+	// 	
+	// //FNavLocation NavLocation;
+	// const FBox Area = GetAreaBox();
+	//
+	// // Try multiple times to find a valid navmesh location inside the spawn area (max 10 attempts)
+	// constexpr int32 MaxAttempts = 10;
+	// for (int32 Attempt = 0; Attempt < MaxAttempts; ++Attempt)
+	// {
+	// 	// 1. Random point inside the spawn area
+	// 	FVector TestLocation = FMath::RandPointInBox(Area);
+	// 	
+	// 	//2. Project to navmesh
+	// 	//if (!NavSys->ProjectPointToNavigation(TestLocation, NavLocation, NavMeshSearchExtent))
+	// 	if (!NavSys->K2_ProjectPointToNavigation(World, TestLocation, TestLocation, nullptr, nullptr, NavMeshSearchExtent))
+	// 	{
+	// 		UE_LOG(LogSpawnManagerSubsystem, Warning, TEXT("UStaticSpawnArea::FindSpawnLocation - Failed to project point to navigation mesh on attempt %d"), Attempt + 1);
+	// 		continue;
+	// 	}
+	// 	
+	// 	//3. Check if the projected location is still inside the area
+	// 	if (!Area.IsInsideOrOn(TestLocation))
+	// 	{
+	// 		UE_LOG(LogSpawnManagerSubsystem, Warning, TEXT("UStaticSpawnArea::FindSpawnLocation - Projected location is outside the spawn area on attempt %d"), Attempt + 1);
+	// 		continue;
+	// 	}
+	// 	 
+	//
+	// 	//4. Check for overlaps at the location
+	// 	// if (IsLocationOverlapping(World, TestLocation))
+	// 	// 	continue;
+	//
+	// 	OutLocation = TestLocation;
+	// 	return true;
+	// }
+	// 	
+	// return false;
 	const FBox Area = GetAreaBox();
-
-	// Try multiple times to find a valid navmesh location inside the spawn area (max 10 attempts)
-	constexpr int32 MaxAttempts = 10;
-	for (int32 Attempt = 0; Attempt < MaxAttempts; ++Attempt)
-	{
-		// 1. Random point inside the spawn area
-		FVector TestLocation = FMath::RandPointInBox(Area);
-
-		// 2. Project to navmesh
-		if (!NavSys->ProjectPointToNavigation(TestLocation, NavLocation, NavMeshSearchExtent))
-			continue;
-
-		// 3. Check if the projected location is still inside the area
-		if (!Area.IsInside(NavLocation.Location))
-			continue;
-
-		// 4. Check for overlaps at the location
-		if (IsLocationOverlapping(World, NavLocation.Location))
-			continue;
-
-		OutLocation = NavLocation.Location;
-		return true;
-	}
-		
-	return false;
+	OutLocation = FMath::RandPointInBox(Area);
+	return true;
 }
 
 void UStaticSpawnArea::DrawGizmo(FPrimitiveDrawInterface* PDI)

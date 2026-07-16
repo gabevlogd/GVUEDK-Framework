@@ -3,8 +3,8 @@
 
 #include "Components/GrapplingHookComponent.h"
 
-#include "Behaviours/MovementBehaviours/Base/GHMovementBehaviourBase.h"
-#include "Behaviours/SearchBehaviours/Base/GHSearchBehaviourBase.h"
+#include "Behaviours/MovementBehaviours/Base/GrapplingHookMovementBehaviour.h"
+#include "Behaviours/SearchBehaviours/Base/GrapplingHookTargetSeekingBehavior.h"
 #include "GameFramework/Character.h"
 
 
@@ -15,6 +15,7 @@ UGrapplingHookComponent::UGrapplingHookComponent()
 	bInitialized = false;
 	TargetGrabPoint = nullptr;
 	OwnerCharacter = nullptr;
+	bNearGrapplePointBroadcasted = false;
 }
 
 void UGrapplingHookComponent::BeginPlay()

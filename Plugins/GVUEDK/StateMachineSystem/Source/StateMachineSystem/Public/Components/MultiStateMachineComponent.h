@@ -4,43 +4,47 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "StateMachineComponent.h"
 #include "Components/ActorComponent.h"
+#include "Data/StateMachineConfig.h"
 #include "MultiStateMachineComponent.generated.h"
 
 class UStateBase;
 struct FInputActionValue;
 DEFINE_LOG_CATEGORY_STATIC(LogMultiStateMachine, All, All);
 
-class UStateMachineComponent;
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnStateChanged, FGameplayTag, StateMachineTag, FGameplayTag, PreviousState, FGameplayTag, NewState);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class STATEMACHINESYSTEM_API UMultiStateMachineComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+public:
+
+	UPROPERTY(BlueprintAssignable, Category="Multi-State Machine")
+	FOnStateChanged OnStateChanged;
+
+	UPROPERTY(BlueprintAssignable, Category="Multi-State Machine")
+	FOnReplicatedDataChanged OnReplicatedDataChanged;
+
 private:
 
 	friend class UStateMachineComponent;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Multi-State Machine", Instanced, meta = (AllowPrivateAccess = "true"))
-	TArray<UStateMachineComponent*> StateMachines;
+	UPROPERTY(EditDefaultsOnly, Category = "Multi-State Machine", meta = (AllowPrivateAccess = "true"))
+	TArray<UStateMachineConfig*> StateMachines;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Multi-State Machine", meta = (AllowPrivateAccess = "true"))
 	TMap<FGameplayTag, UStateMachineComponent*> StateMachinesMap;
-
-	/**
-     *  TArray used to store the states that was interrupted consecutively.
-     *  This is used to check if an infinite loop is detected when checking for states to interrupt.
-     *  If a state is already in the array, it means that it was already interrupted and we will not check it again.
-     */
-	UPROPERTY()
-	TArray<UStateBase*> InterruptionChain;
 	
 	bool bInitialized;
 	bool bPaused;
 
 public:
 	UMultiStateMachineComponent();
+
+	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 	/**
      *  Change the state of the state machine with the given tag
@@ -69,13 +73,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Multi-State Machine")
 	void UnPause(FGameplayTag StateMachineTag);
 
+	UFUNCTION(BlueprintCallable, Category = "Multi-State Machine")
+	void AddStateMachine(UStateMachineConfig* StateMachineData);
+
+	UFUNCTION(BlueprintCallable, Category = "Multi-State Machine")
+	FReplicatedData GetReplicatedData(FGameplayTag StateMachineTag) const;
+
 private:
 
 	void CheckStateToInterrupt(const UStateBase* Interrupter);
 
+	UFUNCTION(BlueprintCallable, Category = "Multi-State Machine", meta = (AllowPrivateAccess = "true"))
 	void Initialize();
-
-	virtual void BeginPlay() override;
 	
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION()
+	void StateChanged(FGameplayTag StateMachineTag, FGameplayTag PreviousState, FGameplayTag NewState);
+
+	UFUNCTION()
+	void ReplicatedDataChanged(const FReplicatedData& NewData);
 };

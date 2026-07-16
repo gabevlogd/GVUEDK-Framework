@@ -1,0 +1,34 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "MultiplayerCore",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "Gabevlogd",
+	"CreatedByURL": "https://gabevlogd.github.io/",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "MultiplayerCore",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"SupportURL": "",
+	"Plugins": [
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": true
+		}
+	]
+}

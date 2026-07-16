@@ -18,11 +18,12 @@ UDodgerComponent::UDodgerComponent()
 
 void UDodgerComponent::StartDodge(FVector WorldDirection)
 {
-	if (!bInitialized || bIsCoolingDown) return;
-	
+	if (!bInitialized || bIsCoolingDown)
+		return;
+
 	bIsDodging = true;
 	ElapsedTime = 0.f;
-	
+
 	if (bDirectionalDodge)
 	{
 		WorldDirection = WorldDirection.IsNearlyZero() ? GetDefaultDirection() : WorldDirection.GetSafeNormal();
@@ -30,31 +31,38 @@ void UDodgerComponent::StartDodge(FVector WorldDirection)
 	else WorldDirection = GetDefaultDirection();
 
 	TargetVelocity = WorldDirection * GetSpeed();
-	
-	if (bApplyGravity) TargetVelocity.Z -= GRAVITY * GravityScale;
+
+	if (bApplyGravity)
+		TargetVelocity.Z -= GRAVITY * GravityScale;
 
 	if (bOrientRotationToMovement)
 	{
 		TargetRotation = FRotator(Owner->GetActorRotation().Pitch, WorldDirection.Rotation().Yaw, Owner->GetActorRotation().Roll);
 		CurrentRotation = Owner->GetActorRotation();
 	}
-	
-	Owner->GetCharacterMovement()->StopMovementImmediately();
 
+	Owner->GetCharacterMovement()->StopMovementImmediately();
 	StartCooldown();
-	
 	OnStartDodge.Broadcast();
+}
+
+void UDodgerComponent::StartDodgeWithSpeed(FVector WorldDirection, const float InLinearSpeed)
+{
+	LinearSpeed = InLinearSpeed;
+	StartDodge(WorldDirection);
 }
 
 void UDodgerComponent::StopDodge()
 {
-	if (!bInitialized) return;
+	if (!bInitialized)
+		return;
+	
 	if (!bConserveMomentum)
-	{
 		Owner->GetCharacterMovement()->StopMovementImmediately();
-	}
+	
 	bIsDodging = false;
 	OnStopDodge.Broadcast();
+	LinearSpeed = DefaultSpeed;
 }
 
 void UDodgerComponent::BeginPlay()
@@ -96,30 +104,29 @@ void UDodgerComponent::Initialize()
 	}
 
 	InitDefaultDirection();
-
+	DefaultSpeed = LinearSpeed;
 	bInitialized = true;
 }
 
 void UDodgerComponent::PerformDodge(float DeltaTime)
 {
-	
 	if (bOrientRotationToMovement)
 	{
 		CurrentRotation = FMath::RInterpConstantTo(CurrentRotation, TargetRotation, DeltaTime, RotationSpeed);
 		Owner->SetActorRotation(CurrentRotation);
 	}
-	
+
 	if (!bApplyUniformVelocity)
 	{
 		TargetVelocity = TargetVelocity.GetSafeNormal() * GetSpeed();
 		if (bApplyGravity)
-        {
-            TargetVelocity.Z -= GRAVITY * GravityScale;
-        }
+		{
+			TargetVelocity.Z -= GRAVITY * GravityScale;
+		}
 	}
 
 	Owner->GetCharacterMovement()->Velocity = TargetVelocity;
-	
+
 	OnDodge.Broadcast();
 	if (ElapsedTime >= DodgeDuration + StartDelay)
 	{
@@ -182,9 +189,9 @@ void UDodgerComponent::StartCooldown()
 			bIsCoolingDown = false;
 			OnDodgeCooldownComplete.Broadcast();
 		});
-		
+
 		FTimerHandle TimerHandle;
-		
+
 		World->GetTimerManager().SetTimer(TimerHandle, TimerDel, DodgeCooldown, false);
 
 		//if the DodgeCooldown <= 0 the timer does not start so we do not want bIsCoolingDown to become true

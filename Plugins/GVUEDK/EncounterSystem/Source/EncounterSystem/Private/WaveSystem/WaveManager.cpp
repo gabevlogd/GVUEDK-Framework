@@ -4,7 +4,7 @@
 #include "WaveSystem/WaveManager.h"
 
 #include "Utility/EncounterSystemUtility.h"
-#include "WaveSystem/WaveCompletionModes/TimerMode.h"
+#include "WaveSystem/WaveCompletionModes/GlobalTimerMode.h"
 #include "WaveSystem/WaveCompletionModes/Base/WaveCompletionMode.h"
 #include "WaveSystem/WaveExecutionModes/Base/WaveExecutionMode.h"
 #include "WaveSystem/Factories/WaveCompletionModeFactory.h"
@@ -78,6 +78,10 @@ void UWaveManager::StartWave(UWaveData* WaveData, const int32 WaveIndex)
 
 	bHasPendingAsyncSpawns = true;
 
+	if (StartTime <= 0.f)
+	{
+		StartTime = GetWorld()->GetTimeSeconds();
+	}
 	CurrentWaveID = FGuid::NewGuid();
 	EnemyTrackers.Add(CurrentWaveID, CreateNewEnemyTracker());
 
@@ -86,6 +90,8 @@ void UWaveManager::StartWave(UWaveData* WaveData, const int32 WaveIndex)
 		CurrentWaveEventsHandler = WaveData->Waves[WaveIndex].WaveEventsHandler;
 		CurrentWaveEventsHandler->Init(this, WaveData, WaveIndex);
 	}
+
+	bAnyActiveWave = true;
 	
 	CurrentWaveExecutionMode->ExecuteWave();
 }
@@ -110,12 +116,10 @@ void UWaveManager::StartNextWave()
 		return;
 	}
 
-	if (!CurrentWaveExecutionMode->HasNextWave())
+	if (!CurrentWaveExecutionMode->HasNextWave() || !CurrentWaveCompletionMode->HasNextWave())
 	{
 		AllWavesCompleted();
-		CurrentWaveExecutionMode = nullptr;
-		CurrentWaveCompletionMode = nullptr;
-		CurrentWaveEventsHandler = nullptr;
+		CleanUpWaveManagerState();
 		return;
 	}
 	
@@ -136,14 +140,8 @@ void UWaveManager::StopCurrentWave()
 		NextWaveTimerHandle.Invalidate();
 	}
 
-	StopListeningSpawnManager();
-	bHasPendingAsyncSpawns = false;
-	CurrentWaveID.Invalidate();
-	StopCallCompletionCheckOnEnemyDeath();
 	WaveCanceled();
-	CurrentWaveExecutionMode = nullptr;
-	CurrentWaveCompletionMode = nullptr;
-	CurrentWaveEventsHandler = nullptr;
+	CleanUpWaveManagerState();
 }
 
 int32 UWaveManager::GetGlobalAliveEnemiesCount() const
@@ -190,6 +188,23 @@ float UWaveManager::GetWaveRemainingTime() const
 	}
 
 	UE_LOG(LogWaveManagerSubsystem, Warning, TEXT("GetWaveRemainingTime called but the current wave completion mode is not a TimerMode"));
+	return -1.f;
+}
+
+float UWaveManager::GetAllWavesRemainingTime() const
+{
+	if (!IsValid(CurrentWaveCompletionMode))
+	{
+		UE_LOG(LogWaveManagerSubsystem, Warning, TEXT("GetAllWavesRemainingTime called but there is no current wave completion mode"));
+		return -1.f;
+	}
+
+	if (const UGlobalTimerMode* TimerMode = Cast<UGlobalTimerMode>(CurrentWaveCompletionMode))
+	{
+		return TimerMode->GetAllWaveRemainingTime();
+	}
+
+	UE_LOG(LogWaveManagerSubsystem, Warning, TEXT("GetAllWavesRemainingTime called but the current wave completion mode is not a GlobalTimerMode"));
 	return -1.f;
 }
 
@@ -267,6 +282,19 @@ void UWaveManager::CallCompletionCheckOnEnemyDeath(const bool ListenToEveryTrack
 	}
 }
 
+void UWaveManager::CleanUpWaveManagerState()
+{
+	StopListeningSpawnManager();
+	bHasPendingAsyncSpawns = false;
+	CurrentWaveID.Invalidate();
+	StopCallCompletionCheckOnEnemyDeath();
+	ClearEnemyTrackers();
+	CurrentWaveExecutionMode = nullptr;
+	CurrentWaveCompletionMode = nullptr;
+	CurrentWaveEventsHandler = nullptr;
+	bAnyActiveWave = false;
+}
+
 void UWaveManager::StopCallCompletionCheckOnEnemyDeath() const
 {
 	for (const TPair<FGuid, UEnemyTracker*>& Pair : EnemyTrackers)
@@ -291,12 +319,19 @@ UEnemyTracker* UWaveManager::CreateNewEnemyTracker()
 	UEnemyTracker* NewEnemyTracker = NewObject<UEnemyTracker>(this);
 	NewEnemyTracker->Init(this);
 	NewEnemyTracker->OnEnemyUnregistered.AddUniqueDynamic(this, &UWaveManager::EnemyDead);
-	NewEnemyTracker->OnNoTrackedEnemiesLeft.AddUniqueDynamic(this, &UWaveManager::RemoveEnemyTracker);
 	return NewEnemyTracker;
 }
 
 void UWaveManager::WaveStarted()
 {
+	if (IsFirstWave())
+	{
+		OnFirstWaveStarted.Broadcast(CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
+		if (IsValid(CurrentWaveEventsHandler))
+		{
+			CurrentWaveEventsHandler->OnFirstWaveStarted(this, CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
+		}
+	}
 	OnWaveStarted.Broadcast(CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
 	if (IsValid(CurrentWaveEventsHandler))
 	{
@@ -316,11 +351,17 @@ void UWaveManager::WaveCompleted()
 	{
 		AutoStartNextWave();
 	}
+	else if (!CurrentWaveExecutionMode->HasNextWave() || !CurrentWaveCompletionMode->HasNextWave())
+	{
+		AllWavesCompleted();
+		CleanUpWaveManagerState();
+	}
 	
 }
 
 void UWaveManager::WaveCanceled()
 {
+	StartTime = -1.f;
 	OnWaveCanceled.Broadcast(CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
 	if (IsValid(CurrentWaveEventsHandler))
 	{
@@ -330,19 +371,11 @@ void UWaveManager::WaveCanceled()
 
 void UWaveManager::AllWavesCompleted()
 {
+	StartTime = -1.f;
 	OnAllWavesCompleted.Broadcast(CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
 	if (IsValid(CurrentWaveEventsHandler))
 	{
 		CurrentWaveEventsHandler->OnAllWavesCompleted(this, CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex());
-	}
-}
-
-void UWaveManager::RemoveEnemyTracker(const FGuid& WaveID)
-{
-	if (EnemyTrackers.Contains(WaveID))
-	{
-		EnemyTrackers[WaveID]->OnNoTrackedEnemiesLeft.RemoveDynamic(this, &UWaveManager::RemoveEnemyTracker);
-		EnemyTrackers.Remove(WaveID);
 	}
 }
 
@@ -385,3 +418,22 @@ void UWaveManager::EnemyDead(AActor* DeadEnemy)
 		CurrentWaveEventsHandler->OnEnemyDead(this, CurrentWaveExecutionMode->GetCurrentWaveData(), CurrentWaveExecutionMode->GetCurrentWaveIndex(), DeadEnemy);
 	}
 }
+
+void UWaveManager::ClearEnemyTrackers()
+{
+	for (const TPair<FGuid, UEnemyTracker*>& Pair : EnemyTrackers)
+	{
+		if (IsValid(Pair.Value))
+		{
+			Pair.Value->Deinitialize();
+			Pair.Value->OnEnemyUnregistered.RemoveDynamic(this, &UWaveManager::CheckWaveCompletion);
+		}
+	}
+	EnemyTrackers.Empty();
+}
+
+bool UWaveManager::IsFirstWave() const
+{
+	return GetWorld() && GetWorld()->GetTimeSeconds() - StartTime <= KINDA_SMALL_NUMBER;
+}
+

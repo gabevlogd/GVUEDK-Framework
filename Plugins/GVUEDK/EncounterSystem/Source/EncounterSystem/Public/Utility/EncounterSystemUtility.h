@@ -51,6 +51,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	static float GetWaveRemainingTime();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	static float GetAllWavesRemainingTime();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	static bool IsAnyWaveActive();
 	
 
 private:

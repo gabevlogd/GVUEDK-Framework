@@ -20,4 +20,11 @@ public:
 	AActor* SpawnActor(UWorld* World, TSubclassOf<AActor> ActorClass, const FVector& Location, const FRotator& Rotation) const;
 
 	AActor* SpawnActor_Implementation(UWorld* World, TSubclassOf<AActor> ActorClass, const FVector& Location, const FRotator& Rotation) const;
+
+private:
+#if WITH_EDITOR
+	virtual bool ImplementsGetWorld() const override { return true; }
+# endif
+
+	virtual UWorld* GetWorld() const override { return GetOuter()->GetWorld(); }
 };

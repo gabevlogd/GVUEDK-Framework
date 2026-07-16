@@ -130,6 +130,8 @@ private:
 	float WallRunningElapsedTime = 0.f;
 
 	bool bWallRunMaxDurationReached = false;
+
+	bool bWallRunEndedBroadcasted = false;
 	
 #pragma endregion
 
@@ -164,6 +166,8 @@ private:
 	float GrindingDirection = 0.f;
 
 	bool bRailGrindWasStarted = false;
+
+	bool bRailGrindEndedBroadcasted = false;
 	
 #pragma endregion
 
@@ -194,6 +198,8 @@ public:
 	virtual float GetMaxBrakingDeceleration() const override;
 
 	bool IsCustomMovementMode(const ECustomMovementMode InCustomMovementMode) const { return MovementMode == MOVE_Custom && CustomMovementMode == InCustomMovementMode; }
+
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
 #pragma region WallRun
 	

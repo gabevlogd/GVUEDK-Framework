@@ -27,6 +27,8 @@ public:
 	
 	void Init(UWaveManager* InWaveManager);
 
+	void Deinitialize();
+
 	UFUNCTION()
 	void RegisterEnemy(AActor* SpawnedEnemy);
 
@@ -47,4 +49,6 @@ private:
 	UWaveManager* WaveManager;
 
 	FGuid AssociatedWaveID;
+
+	bool bAcceptingSpawns = false;
 };

@@ -14,19 +14,35 @@ AGrindableRail::AGrindableRail()
 
 	Spline = CreateDefaultSubobject<USplineComponent>(TEXT("RailSpline"));
 	SetRootComponent(Spline);
-	Spline->SetMobility(EComponentMobility::Static);
 }
 
 void AGrindableRail::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (!Spline) return;
+	for (USplineMeshComponent* SplineMeshComponent : SplineMeshComponents)
+	{
+		SplineMeshComponent->DestroyComponent();
+	}
+
+	SplineMeshComponents.Empty();
+
+	if (!Spline || !RailMesh) return;
 
 	for (int i = 0; i <= GetLastIndex(); i++)
 	{
-		USplineMeshComponent* NewMesh = static_cast<USplineMeshComponent*>(AddComponentByClass(USplineMeshComponent::StaticClass(), false, FTransform(), false));
+		USplineMeshComponent* NewMesh = NewObject<USplineMeshComponent>(
+			this,
+			USplineMeshComponent::StaticClass(),
+			NAME_None,
+			RF_Transactional
+		);
+		NewMesh->SetMobility(EComponentMobility::Movable);
 		NewMesh->SetStaticMesh(RailMesh);
+		NewMesh->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		NewMesh->RegisterComponent();
+		AddInstanceComponent(NewMesh);
+		
 		FVector StartLocation, StartTangent, EndLocation, EndTangent;
 		GetStartAndEnd(i, StartLocation, StartTangent, EndLocation, EndTangent);
 		NewMesh->SetStartAndEnd(StartLocation, StartTangent, EndLocation, EndTangent);
@@ -42,6 +58,8 @@ void AGrindableRail::OnConstruction(const FTransform& Transform)
 		{
 			NewMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 		}
+
+		SplineMeshComponents.Add(NewMesh);
 	}
 }
 

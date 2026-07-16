@@ -2,7 +2,8 @@
 
 
 #include "Components/MultiStateMachineComponent.h"
-#include "Components/StateMachineComponent.h"
+
+#include "Engine/ActorChannel.h"
 
 
 UMultiStateMachineComponent::UMultiStateMachineComponent()
@@ -10,6 +11,22 @@ UMultiStateMachineComponent::UMultiStateMachineComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	bInitialized = false;
 	bPaused = false;
+	SetIsReplicatedByDefault(true);
+}
+
+bool UMultiStateMachineComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch,
+	FReplicationFlags* RepFlags)
+{
+	bool Result = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+	for (const auto Element : StateMachinesMap)
+	{
+		UStateMachineComponent* StateMachine = Element.Value;
+		if (IsValid(StateMachine) && StateMachine->WantsReplication())
+		{
+			Result |= Channel->ReplicateSubobject(StateMachine, *Bunch, *RepFlags);
+		}
+	}
+	return Result;
 }
 
 void UMultiStateMachineComponent::ChangeState(const FGameplayTag NextState, const FGameplayTag RelativeStateMachine)
@@ -21,17 +38,11 @@ void UMultiStateMachineComponent::ChangeState(const FGameplayTag NextState, cons
 
 	if (!StateMachinesMap.Contains(RelativeStateMachine))
 	{
-		UE_LOG(LogMultiStateMachine, Warning, TEXT("Invalid State Machine tag"));
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("ChangeState: Invalid State Machine tag"));
 		return;
 	}
-
-	UStateBase* NewState = StateMachinesMap[RelativeStateMachine]->ChangeState(NextState);
-	// Check if the new state is valid and if it is, check if it has to interrupt other states of other state machines
-	if (IsValid(NewState))
-	{
-		//InterruptionChain = TArray<UStateBase*>();
-		//CheckStateToInterrupt(NewState);
-	}
+	
+	StateMachinesMap[RelativeStateMachine]->ChangeState(NextState);
 }
 
 void UMultiStateMachineComponent::HandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value, const FGameplayTag RelativeStateMachine)
@@ -43,17 +54,11 @@ void UMultiStateMachineComponent::HandleInput(const FGameplayTag InputActionTag,
 
 	if (!StateMachinesMap.Contains(RelativeStateMachine))
 	{
-		UE_LOG(LogMultiStateMachine, Warning, TEXT("Invalid state machine tag"));
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("HandleInput: Invalid state machine tag"));
 		return;
 	}
-
-	UStateBase* NewState = StateMachinesMap[RelativeStateMachine]->HandleInput(InputActionTag, Value);
-	// Check if the new state is valid and if it is, check if it has to interrupt other states of other state machines
-	if (IsValid(NewState))
-	{
-		InterruptionChain = TArray<UStateBase*>();
-		CheckStateToInterrupt(NewState);
-	}
+	
+	StateMachinesMap[RelativeStateMachine]->HandleInput(InputActionTag, Value);
 }
 
 void UMultiStateMachineComponent::PauseAll(const bool bResetToEntryState)
@@ -69,7 +74,7 @@ void UMultiStateMachineComponent::Pause(FGameplayTag StateMachineTag, const bool
 {
 	if (!StateMachinesMap.Contains(StateMachineTag))
 	{
-		UE_LOG(LogMultiStateMachine, Warning, TEXT("Invalid state machine tag"));
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("Pause: Invalid state machine tag"));
 		return;
 	}
 
@@ -89,7 +94,7 @@ void UMultiStateMachineComponent::UnPause(FGameplayTag StateMachineTag)
 {
 	if (!StateMachinesMap.Contains(StateMachineTag))
 	{
-		UE_LOG(LogMultiStateMachine, Warning, TEXT("Invalid state machine tag"));
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("UnPause: Invalid state machine tag"));
 		return;
 	}
 
@@ -108,23 +113,7 @@ void UMultiStateMachineComponent::CheckStateToInterrupt(const UStateBase* Interr
 
 		if (Element.Value->GetCurrentState()->Interrupters.Contains(Interrupter->GetStateTag()))
 		{
-			UStateBase* OutState = Element.Value->InterruptCurrentState(Interrupter->GetStateTag());
-			
-			if (!IsValid(OutState))
-			{
-				continue;
-			}
-			
-			if (!InterruptionChain.Contains(OutState))
-			{
-				InterruptionChain.Add(OutState);
-				CheckStateToInterrupt(OutState);
-			}
-			else
-			{
-				UE_LOG(LogMultiStateMachine, Warning, TEXT("Infinite loop detected, check interrupters of state %s"), *Interrupter->GetName());
-				return;
-			}
+			Element.Value->InterruptCurrentState(Interrupter->GetStateTag());
 		}
 	}
 }
@@ -134,31 +123,57 @@ void UMultiStateMachineComponent::Initialize()
 	StateMachinesMap = TMap<FGameplayTag, UStateMachineComponent*>();
 	for (const auto Element : StateMachines)
 	{
-		if (!IsValid(Element))
-		{
-			UE_LOG(LogMultiStateMachine, Warning, TEXT("Invalid State Machine found"));
-			continue;
-		}
-		
-		if (StateMachinesMap.Contains(Element->GetStateMachineTag()))
-		{
-			UE_LOG(LogMultiStateMachine, Warning, TEXT("State Machine Tag: %s already exists, associated state machine will not work"), *Element->GetStateMachineTag().ToString());
-			continue;
-		}
-
-		StateMachinesMap.Add(Element->GetStateMachineTag(), Element);
-		Element->MultiStateMachine = this;
-		Element->BeginPlay();
-		UE_LOG(LogMultiStateMachine, Log, TEXT("State Machine %s added to state machines map"), *Element->GetName());
+		AddStateMachine(Element);
 	}
 
 	bInitialized = !StateMachinesMap.IsEmpty();
 }
 
-void UMultiStateMachineComponent::BeginPlay()
+void UMultiStateMachineComponent::AddStateMachine(UStateMachineConfig* StateMachineData)
 {
-	Super::BeginPlay();
-	Initialize();
+	if (!IsValid(StateMachineData))
+	{
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("AddStateMachine: Invalid State Machine found"));
+		return;
+	}
+		
+	if (StateMachinesMap.Contains(StateMachineData->StateMachineTag))
+	{
+		UE_LOG(LogMultiStateMachine, Warning, TEXT("State Machine Tag: %s already exists, associated state machine will not work"), *StateMachineData->StateMachineTag.ToString());
+		return;
+	}
+
+	FName SMName = FName(*FString::Printf(TEXT("SM_%s"), *StateMachineData->StateMachineTag.ToString()));
+	UStateMachineComponent* StateMachine = NewObject<UStateMachineComponent>(this, SMName);
+	StateMachine->SetConfigData(StateMachineData);
+	StateMachinesMap.Add(StateMachineData->StateMachineTag, StateMachine);
+	StateMachine->OnStateChanged.AddDynamic(this, &UMultiStateMachineComponent::StateChanged);
+	StateMachine->OnReplicatedDataChanged.AddDynamic(this, &UMultiStateMachineComponent::ReplicatedDataChanged);
+	StateMachine->MultiStateMachine = this;
+	if (StateMachine->WantsReplication())
+	{
+		StateMachine->SetIsReplicated(true);
+		StateMachine->SetNetAddressable(); 
+		if (GetOwner()->HasAuthority())
+		{
+			AddReplicatedSubObject(StateMachine);
+		}
+	}
+	StateMachine->RegisterComponent();
+	// This avoids the engine to call TickComponent on the state machine component and allows us to control when it ticks by calling its TickComponent function directly from the MultiStateMachineComponent tick
+	StateMachine->SetComponentTickEnabled(false); 
+	UE_LOG(LogMultiStateMachine, Log, TEXT("State Machine %s added to state machines map"), *StateMachine->GetName());
+}
+
+FReplicatedData UMultiStateMachineComponent::GetReplicatedData(FGameplayTag StateMachineTag) const
+{
+	if (StateMachinesMap.Contains(StateMachineTag))
+	{
+		return StateMachinesMap[StateMachineTag]->GetReplicatedData();
+	}
+	
+	UE_LOG(LogMultiStateMachine, Warning, TEXT("GetReplicatedData: Invalid State Machine tag"));
+	return FReplicatedData();
 }
 
 void UMultiStateMachineComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
@@ -175,5 +190,16 @@ void UMultiStateMachineComponent::TickComponent(float DeltaTime, enum ELevelTick
 	{
 		Element.Value->TickComponent(DeltaTime, TickType, ThisTickFunction);
 	}
+}
+
+void UMultiStateMachineComponent::StateChanged(FGameplayTag StateMachineTag, FGameplayTag PreviousState,
+	FGameplayTag NewState)
+{
+	OnStateChanged.Broadcast(StateMachineTag, PreviousState, NewState);
+}
+
+void UMultiStateMachineComponent::ReplicatedDataChanged(const FReplicatedData& NewData)
+{
+	OnReplicatedDataChanged.Broadcast(NewData);
 }
 

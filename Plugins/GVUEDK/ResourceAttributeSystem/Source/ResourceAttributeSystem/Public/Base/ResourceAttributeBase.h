@@ -12,6 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDecreasedAttribute);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReachedMaxValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReachedMinValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMaxValueChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FValueChangedImmediately);
 
 UCLASS(Blueprintable, BlueprintType, Abstract, EditInlineNew)
 class RESOURCEATTRIBUTESYSTEM_API UResourceAttributeBase : public UObject
@@ -20,6 +21,7 @@ class RESOURCEATTRIBUTESYSTEM_API UResourceAttributeBase : public UObject
 
 public:
 	UResourceAttributeBase();
+	
 	virtual void Initialize(AActor* InOwner, const FGameplayTag InTag);
 
 	UFUNCTION(BlueprintCallable)
@@ -27,6 +29,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	virtual void SetValue(const float NewValue);
+
+	// Sets the value without any checks or clamps and without triggering any of the increase/decrease or max/min reached events, use with caution
+	UFUNCTION(BlueprintCallable)
+	virtual void SetValueImmediately(const float NewValue);
 	
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Returns true if the value was secsessfully added"))
 	virtual bool AddValue(const float Value);
@@ -38,7 +44,16 @@ public:
 	virtual bool IsFull() const;
 
 	UFUNCTION(BlueprintCallable)
+	virtual bool IsEmpty() const;
+
+	UFUNCTION(BlueprintCallable)
 	virtual void SetMaxValue(const float NewMaxValue);
+
+	UFUNCTION(BlueprintCallable)
+	virtual void SetCanUpdateValue(const bool NewCanUpdateValue);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool CanUpdateValue();
 
 private:
 	void StartRegen();
@@ -61,6 +76,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FMaxValueChanged OnMaxValueChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FValueChangedImmediately OnValueChangedImmediately;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bCanRegen;
@@ -88,9 +106,6 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bCanRegen", ToolTip = "Regen starts when the current value is below this threshold"))
 	float StartRegenValue;
-	
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bCanRegen", ToolTip = "Regen stops when the current value is above this threshold"))
-	// float StopRegenValue;
 
 protected:
 	UPROPERTY()
@@ -103,6 +118,7 @@ protected:
 
 private:
 	bool bMustRegen;
+	bool bCanUpdateValue;
 	FTimerHandle RegenTimer;
 	FTimerHandle RegenDelayTimer;
 	

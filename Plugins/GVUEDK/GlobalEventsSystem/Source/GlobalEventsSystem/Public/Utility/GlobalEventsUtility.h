@@ -21,21 +21,21 @@ public:
 	static void Initialize(UGlobalEventsSubsystem* GlobalEvents);
 
 	UFUNCTION(BlueprintCallable, Category = "GlobalEvents")
-	static void BindEvent(const FGameplayTag EventTag, const FGloablEvent& Event);
+	static void BindEvent(const FGameplayTag EventTag, const FGlobalEvent& Event);
 
-	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Bind Event"))
+	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Bind Event With Object"))
 	static void BindObjectEvent(const FGameplayTag EventTag, const FGlobalEventWithObject& Event);
 
 	UFUNCTION(BlueprintCallable, Category = "GlobalEvents")
-	static void UnbindEvent(const FGameplayTag EventTag, const FGloablEvent& Event);
+	static void UnbindEvent(const FGameplayTag EventTag, const FGlobalEvent& Event);
 
-	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Unbind Event"))
+	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Unbind Event With Object"))
 	static void UnbindObjectEvent(const FGameplayTag EventTag, const FGlobalEventWithObject& Event);
 	
 	UFUNCTION(BlueprintCallable, Category = "GlobalEvents")
 	static void CallEvent(const FGameplayTag EventTag);
 
-	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Call Event"))
+	UFUNCTION(BlueprintCallable, Category = "GlobalEvents", meta = (DisplayName = "Call Event With Object"))
 	static void CallObjectEvent(const FGameplayTag EventTag, UObject* Object);
 
 private:

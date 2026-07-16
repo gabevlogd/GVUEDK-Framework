@@ -25,6 +25,8 @@ public:
 
 	virtual bool ShouldCallCompletionCheckOnEnemyDeath() const { return bCallCompletionCheckOnEnemyDeath; }
 
+	virtual bool HasNextWave() const { return true; }
+
 protected:
 	
 	UPROPERTY()

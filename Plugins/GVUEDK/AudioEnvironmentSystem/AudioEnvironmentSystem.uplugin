@@ -1,0 +1,24 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "1.0.0",
+    "FriendlyName": "Audio Environment System",
+    "Description": "Modular, middleware-agnostic audio environment detection, blending and parameter aggregation system for Unreal Engine 5.",
+    "Category": "GVUEDK",
+    "CreatedBy": "Gabevlogd",
+    "CreatedByURL": "https://gabevlogd.github.io/",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "CanContainContent": true,
+    "IsBetaVersion": true,
+    "IsExperimentalVersion": true,
+    "Installed": false,
+    "Modules": [
+        {
+            "Name": "AudioEnvironmentSystem",
+            "Type": "Runtime",
+            "LoadingPhase": "Default"
+        }
+    ]
+}

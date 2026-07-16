@@ -8,6 +8,8 @@
 #include "Components/SplineComponent.h"
 #include "GrindableRail.generated.h"
 
+class USplineMeshComponent;
+
 UCLASS()
 class CUSTOMMOVEMENTSYSTEM_API AGrindableRail : public AActor
 {
@@ -23,6 +25,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail")
 	UStaticMesh* RailMesh;
+
+	UPROPERTY()
+	TArray<USplineMeshComponent*> SplineMeshComponents;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail")
 	bool bStretchMesh = false;

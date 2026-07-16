@@ -12,6 +12,8 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogSequencesManagerSystem, All, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSequenceSkipped);
+
 /**
  * 
  */
@@ -44,6 +46,9 @@ private:
 
 private:
 
+	UPROPERTY(BlueprintAssignable)
+	FOnSequenceSkipped OnSequenceSkipped;
+
 	UPROPERTY()
 	const USequencesManagerSettings* Settings;
 	
@@ -63,6 +68,8 @@ private:
 	float SkipKeyHoldTime = 2.f;
 
 	float SkipKeyStartTime = 0.f;
+
+	int SkipSequenceWidgetZOrder = 1000;
 	
 	bool bTickEnabled = false;
 

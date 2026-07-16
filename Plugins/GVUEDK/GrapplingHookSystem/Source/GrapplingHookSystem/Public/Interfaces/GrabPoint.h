@@ -13,45 +13,54 @@ class UGrabPoint : public UInterface
 	GENERATED_BODY()
 };
 
-/**
- * 
- */
 class GRAPPLINGHOOKSYSTEM_API IGrabPoint
 {
 	GENERATED_BODY()
 
 public:
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	AActor* GetActor();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	FVector GetLandingPoint();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	FVector GetLocation();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	float GetMass();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	void SetLocation(const FVector& NewWorldLocation);
 	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	bool CanBeGrabbed(const ACharacter* Character);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	void OnStartGrab();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void OnMoveing();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
+	void OnMoving();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	void OnStopGrab();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
+	bool IsGrabbed();
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	void Highlight();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
 	void Unhighlight();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
+	void OnBecameRelevant();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
+	void OnBecameGrabbable();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GrabPoint")
+	bool IsStillRelevant();
 };

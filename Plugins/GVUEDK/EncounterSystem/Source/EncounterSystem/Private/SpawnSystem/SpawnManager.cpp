@@ -20,7 +20,14 @@ void USpawnManager::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
-	SpawnOperation = NewObject<USpawnOperation>(this, EncounterSystemSettings->DefaultSpawnOperation);
+	const TSubclassOf<USpawnOperation> SpawnOperationClass = EncounterSystemSettings->DefaultSpawnOperation;
+	if (!IsValid(SpawnOperationClass))
+	{
+		UE_LOG(LogSpawnManagerSubsystem, Error, TEXT("SpawnManagerSubsystem: DefaultSpawnOperation class is not valid in EncounterSystemSettings."));
+		return;
+	}
+	
+	SpawnOperation = NewObject<USpawnOperation>(this, SpawnOperationClass);
 
 	UEncounterSystemUtility::InitializeSpawnSystem(this);
 
@@ -66,7 +73,7 @@ AActor* USpawnManager::SpawnEnemyAtLocation(const TSubclassOf<AActor> EnemyClass
 		return Enemy;
 	}
 
-	UE_LOG(LogSpawnManagerSubsystem, Error, TEXT("Failed to spawn enemy of class %s at location %s"), *EnemyClass->GetName(), *Location.ToString());
+	UE_LOG(LogSpawnManagerSubsystem, Warning, TEXT("Failed to spawn enemy of class %s at location %s"), *EnemyClass->GetName(), *Location.ToString());
 	return nullptr;
 }
 

@@ -1,5 +1,6 @@
 #include "SpawnSystem/SpawnMethods/StaticSpawnPoint.h"
 #include "NavigationSystem.h"
+#include "Kismet/GameplayStatics.h"
 
 
 bool UStaticSpawnPoint::Init(USpawnMethod* Template, USpawnManager* InSpawnManager)
@@ -21,43 +22,45 @@ bool UStaticSpawnPoint::Init(USpawnMethod* Template, USpawnManager* InSpawnManag
 
 bool UStaticSpawnPoint::FindSpawnLocation(UWorld* World, AActor* ContextActor, FVector& OutLocation)
 {
-	if (!IsValid(World)) return false;
-
-	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World);
-	if (!IsValid(NavSys)) return false;
-		
-	FNavLocation NavLocation;
-
-	// Try multiple times to find a valid navmesh location near the spawn point (max 10 attempts)
-	constexpr int32 MaxAttempts = 10;
-	for (int32 Attempt = 0; Attempt < MaxAttempts; ++Attempt)
-	{
-		// 1. Random offset within extent
-		FVector RandomOffset = FVector(
-			FMath::FRandRange(-NavMeshSearchExtent.X, NavMeshSearchExtent.X),
-			FMath::FRandRange(-NavMeshSearchExtent.Y, NavMeshSearchExtent.Y),
-			FMath::FRandRange(-NavMeshSearchExtent.Z, NavMeshSearchExtent.Z)
-		);
-
-		FVector TestLocation = SpawnPointLocation + RandomOffset;
-
-		// 2. Project to navmesh
-		if (!NavSys->ProjectPointToNavigation(TestLocation, NavLocation, NavMeshSearchExtent))
-			continue;
-
-		// 3. Check for overlaps at the location
-		if (IsLocationOverlapping(World, NavLocation.Location))
-			continue;
-		
-		OutLocation = NavLocation.Location;
-		return true;
-	}
-	return false;
+	// if (!IsValid(World)) return false;
+	//
+	// UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World);
+	// if (!IsValid(NavSys)) return false;
+	// 	
+	// FNavLocation NavLocation;
+	//
+	// // Try multiple times to find a valid navmesh location near the spawn point (max 10 attempts)
+	// constexpr int32 MaxAttempts = 10;
+	// for (int32 Attempt = 0; Attempt < MaxAttempts; ++Attempt)
+	// {
+	// 	// 1. Random offset within extent
+	// 	FVector RandomOffset = FVector(
+	// 		FMath::FRandRange(-NavMeshSearchExtent.X, NavMeshSearchExtent.X),
+	// 		FMath::FRandRange(-NavMeshSearchExtent.Y, NavMeshSearchExtent.Y),
+	// 		FMath::FRandRange(-NavMeshSearchExtent.Z, NavMeshSearchExtent.Z)
+	// 	);
+	//
+	// 	FVector TestLocation = SpawnPointLocation + RandomOffset;
+	//
+	// 	// 2. Project to navmesh
+	// 	if (!NavSys->ProjectPointToNavigation(TestLocation, NavLocation, NavMeshSearchExtent))
+	// 		continue;
+	//
+	// 	// 3. Check for overlaps at the location
+	// 	//if (IsLocationOverlapping(World, NavLocation.Location))
+	// 		//continue;
+	// 	
+	// 	OutLocation = NavLocation.Location;
+	// 	return true;
+	// }
+	// return false;
+	OutLocation = SpawnPointLocation;
+	return true;
 }
 
 bool UStaticSpawnPoint::FindSpawnRotation(UWorld* World, AActor* ContextActor, FRotator& OutRotation)
 {
-	OutRotation = SpawnRotation;
+	OutRotation = (UGameplayStatics::GetPlayerPawn(World, 0)->GetActorLocation() - SpawnPointLocation).Rotation();
 	return true;
 }
 

@@ -25,6 +25,7 @@ void USequencesHandlerSubsystem::Initialize(FSubsystemCollectionBase& Collection
 		SkipKeyHoldTime = FMath::Max(SettingsData->SkipKeyHoldTime, 0.01f);
 		bAddWidgetIndicator = SettingsData->bAddSkipSequenceWidgetIndicator;
 		bAddWidgetIndicator ? SkipSequenceWidgetClass = SettingsData->SkipSequenceWidgetIndicator : nullptr;
+		SkipSequenceWidgetZOrder = SettingsData->SkipSequenceWidgetZOrder;
 	}
 	else
 	{
@@ -80,6 +81,7 @@ void USequencesHandlerSubsystem::Tick(float DeltaTime)
 		if (PC->GetInputKeyTimeDown(KeyboardSkipKey) >= SkipKeyStartTime + SkipKeyHoldTime ||
 			PC->GetInputKeyTimeDown(GamepadSkipKey) >= SkipKeyStartTime + SkipKeyHoldTime)
 		{
+			OnSequenceSkipped.Broadcast();
 			CurrentSequencePlayer->Stop();
 			//GEngine->AddOnScreenDebugMessage( -1, 5.f, FColor::Red, TEXT("Sequence Skipped") );
 			
@@ -107,7 +109,7 @@ void USequencesHandlerSubsystem::OnSequenceStarted()
 		{
 			if (UUserWidget* SkipWidget = CreateWidget<UUserWidget, APlayerController*>(PC, SkipSequenceWidgetClass, TEXT("SkipSequenceWidget")))
 			{
-				SkipWidget->AddToViewport();
+				SkipWidget->AddToViewport(SkipSequenceWidgetZOrder);
 				SkipWidget->SetVisibility(ESlateVisibility::Collapsed);
 				SkipSequenceWidgetInstance = SkipWidget;
 				//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Skip Sequence Widget Added") );

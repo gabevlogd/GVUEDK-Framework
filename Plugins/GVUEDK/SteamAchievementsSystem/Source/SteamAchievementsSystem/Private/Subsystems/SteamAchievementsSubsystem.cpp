@@ -34,6 +34,12 @@ void USteamAchievementsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 
 bool USteamAchievementsSubsystem::UnlockAchievementRequest(FName AchName, float Progress)
 {
+	if (AchName.IsNone() || AchName.IsEqual(""))
+	{
+		UE_LOG(LogSteamAchievements, Warning, TEXT("UnlockAchievementRequest: Invalid achievement name"));
+		return false;
+	}
+	
 	const FAchievementRequest Request = FAchievementRequest(AchName, Progress);
 
 	// Avoid duplicates in the queue
@@ -99,7 +105,7 @@ void USteamAchievementsSubsystem::UpdateAchievementsQueue()
 	AchievementsQueue.RemoveAt(0);
 
 	FOnlineAchievementsWriteRef AchievementWrite = MakeShared<FOnlineAchievementsWrite>();
-	AchievementWrite->SetFloatStat(Request.AchievementName, Request.AchievementProgress);
+	AchievementWrite->SetFloatStat(Request.AchievementName.ToString(), Request.AchievementProgress);
 
 	LastAchievementRequested = Request.AchievementName;
 
@@ -378,8 +384,8 @@ void USteamAchievementsSubsystem::LoadLocalAchievements(TArray<FAchievementReque
 				if (!Obj.IsValid())
 					continue;
 
-				FString Id = Obj->GetStringField("Id");
-				const float Progress = Obj->GetNumberField("Progress");
+				FString Id = Obj->GetStringField(StringCast<TCHAR>("Id"));
+				const float Progress = Obj->GetNumberField(StringCast<TCHAR>("Progress"));
 
 				// Add recovered achievement to output array
 				OutAchievements.Add(FAchievementRequest(FName(Id), Progress));

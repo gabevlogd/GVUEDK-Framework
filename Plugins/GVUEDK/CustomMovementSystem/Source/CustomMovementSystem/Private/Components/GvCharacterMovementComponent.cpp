@@ -58,12 +58,17 @@ bool UGvCharacterMovementComponent::DoJump(bool bReplayingMoves, float DeltaTime
 			Velocity += WallHit.Normal * WallJumpOffNormalForce;
 			Velocity.Z = WallJumpOffVerticalForce;
 
-			OnWallRunEnded.Broadcast();
+			if (!bWallRunEndedBroadcasted)
+			{
+				OnWallRunEnded.Broadcast();
+				bWallRunEndedBroadcasted = true;
+			}
 		}
-		else if (bWasRailGrinding)
+		else if (bWasRailGrinding && !bRailGrindEndedBroadcasted)
 		{
 			RailSpline = nullptr;
 			OnRailGrindEnded.Broadcast();
+			bRailGrindEndedBroadcasted = true;
 		}
 		return true;
 	}
@@ -108,6 +113,24 @@ float UGvCharacterMovementComponent::GetMaxBrakingDeceleration() const
 	
 }
 
+void UGvCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+
+	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_WallRun && !bWallRunEndedBroadcasted)
+	{
+		OnWallRunEnded.Broadcast();
+		bWallRunEndedBroadcasted = true;
+	}
+	
+	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == CMOVE_RailGrind && !bRailGrindEndedBroadcasted)
+	{
+		RailSpline = nullptr;
+		OnRailGrindEnded.Broadcast();
+		bRailGrindEndedBroadcasted = true;
+	}
+}
+
 void UGvCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
 	Super::PhysCustom(deltaTime, Iterations);
@@ -137,6 +160,7 @@ void UGvCharacterMovementComponent::PhysFalling(float deltaTime, int32 Iteration
 
 bool UGvCharacterMovementComponent::TryWallRun()
 {
+	if (IsWallRunning()) return false;
 	if (!bCanWallRun) return false;
 	if (bWallRunMaxDurationReached) return false;
 	if (!IsFalling()) return false;
@@ -197,6 +221,7 @@ bool UGvCharacterMovementComponent::TryWallRun()
 	Velocity.Z = FMath::Clamp(Velocity.Z, 0.f, MaxVerticalWallRunSpeed);
 	WallRunningElapsedTime = 0.f;
 	bWallRunMaxDurationReached = false;
+	bWallRunEndedBroadcasted = false;
 	SetMovementMode(MOVE_Custom, CMOVE_WallRun);
 	OnWallRunStarted.Broadcast();
 	return true;
@@ -226,7 +251,11 @@ void UGvCharacterMovementComponent::PhysWallRunning(float deltaTime, int32 Itera
 	{
 		SetMovementMode(MOVE_Falling);
 		StartNewPhysics(RemainingTime, Iterations);
-		OnWallRunEnded.Broadcast();
+		if (!bWallRunEndedBroadcasted)
+		{
+			OnWallRunEnded.Broadcast();
+			bWallRunEndedBroadcasted = true;
+		}
 	};
 	
 	/**/
@@ -339,12 +368,17 @@ void UGvCharacterMovementComponent::PhysWallRunning(float deltaTime, int32 Itera
 	if (FloorHit.IsValidBlockingHit() || !WallHit.IsValidBlockingHit() || Velocity.SizeSquared2D() < pow(MinWallRunSpeed, 2))
 	{
 		SetMovementMode(MOVE_Falling);
-		OnWallRunEnded.Broadcast();
+		if (!bWallRunEndedBroadcasted)
+		{
+			OnWallRunEnded.Broadcast();
+			bWallRunEndedBroadcasted = true;
+		}
 	}
 }
 
 bool UGvCharacterMovementComponent::TryRailGrind(USplineComponent* Spline)
 {
+	if (IsRailGrinding()) return false;
 	if (!bCanRailGrind) return false;
 	if (!IsValid(Spline)) return false;
 	//if (!IsFalling()) return false;
@@ -355,13 +389,13 @@ bool UGvCharacterMovementComponent::TryRailGrind(USplineComponent* Spline)
 	bRailGrindWasStarted = RailGrindStartLocation.Equals(CapsuleBaseLocation() - CharacterOwner->GetActorUpVector() * DistanceOffset);
 	CalcGrindDirection(RailDist);
 	OnRailGrindStarted.Broadcast();
+	bRailGrindEndedBroadcasted = false;
 	return true;
 }
 
 void UGvCharacterMovementComponent::PhysRailGrinding(float deltaTime, int32 Iterations)
 {
 	// All line marked by empty comments "/**/" are to follow the same logic as PhysWalking
-
 	/**/
 	if (deltaTime < MIN_TICK_TIME) 
 	{
@@ -413,8 +447,12 @@ void UGvCharacterMovementComponent::PhysRailGrinding(float deltaTime, int32 Iter
 		{
 			SetMovementMode(MOVE_Falling);
 			StartNewPhysics(RemainingTime, Iterations);
-			RailSpline = nullptr;
-			OnRailGrindEnded.Broadcast();
+			if (!bRailGrindEndedBroadcasted)
+			{
+				RailSpline = nullptr;
+				OnRailGrindEnded.Broadcast();
+				bRailGrindEndedBroadcasted = true;
+			}
 			return;
 		}
 

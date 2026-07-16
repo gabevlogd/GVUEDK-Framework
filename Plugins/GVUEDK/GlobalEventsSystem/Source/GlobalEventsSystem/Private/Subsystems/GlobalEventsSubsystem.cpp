@@ -5,7 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "Utility/GlobalEventsUtility.h"
 
-void UGlobalEventsSubsystem::BindEvent(const FGameplayTag& EventTag, const FGloablEvent& Event)
+void UGlobalEventsSubsystem::BindEvent(const FGameplayTag& EventTag, const FGlobalEvent& Event)
 {
 	if (!EventTag.IsValid())
 	{
@@ -27,7 +27,7 @@ void UGlobalEventsSubsystem::BindObjectEvent(const FGameplayTag& EventTag, const
 	ObjectEventMap.FindOrAdd(EventTag, FGlobalEventSignatureWithObject()).AddUnique(Event);
 }
 
-void UGlobalEventsSubsystem::UnbindEvent(const FGameplayTag& EventTag, const FGloablEvent& Event)
+void UGlobalEventsSubsystem::UnbindEvent(const FGameplayTag& EventTag, const FGlobalEvent& Event)
 {
 	if (!EventTag.IsValid())
 	{

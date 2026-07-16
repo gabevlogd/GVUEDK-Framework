@@ -17,22 +17,7 @@ UCLASS()
 class POPUPSYSTEM_API UPopUpManagerSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
-
-private:
-
-	UPROPERTY()
-	const UPopUpSystemSettings* PopUpSystemSettings;
 	
-	UPROPERTY()
-	UPopUpRegister* PopUpRegister;
-
-	UPROPERTY()
-	TMap<FGameplayTag, UUserWidget*> ActivePopUps;
-
-private:
-
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
 public:
 
 	UUserWidget* AddPopUp(const FGameplayTag& PopUpTag);
@@ -52,7 +37,17 @@ public:
 	bool TryGetActivePopUp(const FGameplayTag& PopUpTag, UUserWidget*& OutPopUpWidget) const;
 
 	bool IsPopUpActive(const FGameplayTag& PopUpTag) const;
-	
 
+private:
+
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
+	UPROPERTY()
+	const UPopUpSystemSettings* PopUpSystemSettings;
+
+	UPROPERTY()
+	TMap<FGameplayTag, UUserWidget*> ActivePopUps;
+
+	UPROPERTY()
+	TMap<FGameplayTag, FPopUpData> PopUpDataMap;
 };

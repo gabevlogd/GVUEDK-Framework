@@ -3,6 +3,7 @@
 
 #include "State/StateBase.h"
 #include "TransitionEvents.h"
+#include "Components/StateMachineComponent.h"
 
 
 void UStateBase::Initialize(AActor* Context, UStateMachineComponent* StateMachine)
@@ -42,7 +43,7 @@ void UStateBase::Update(const float DeltaTime)
 	OnUpdate(DeltaTime);
 }
 
-void UStateBase::Exit()
+void UStateBase::Exit(const FGameplayTag& NextStateTag)
 {
 	if (!bInitialized)
 	{
@@ -50,18 +51,18 @@ void UStateBase::Exit()
 	}
 	//UE_LOG(LogStateBase, Warning, TEXT("State %s: Exit"), *GetName());
 	bIsRunning = false;
-	NativeOnExit();
-	OnExit();
+	NativeOnExit(NextStateTag);
+	OnExit(NextStateTag);
 }
 
-FGameplayTag UStateBase::HandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value)
+void UStateBase::HandleInput(const FGameplayTag InputActionTag, const FInputActionValue& Value)
 {
 	if (!bInitialized)
 	{
-		return StateTag;
+		return;
 	}
-
-	// Check if the input action tag is in the transitions map, if so, return the corresponding state tag
+	
+	// Check if the input action tag is in the transitions map, if so, check the transition condition and if it is satisfied, run the transition events and change the state
 	for (auto Element : Transitions)
 	{
 		if (Element.Key == InputActionTag)
@@ -70,50 +71,27 @@ FGameplayTag UStateBase::HandleInput(const FGameplayTag InputActionTag, const FI
 			{
 				if (!Element.Value.TransitionEvents->TransitionCondition(StateContext, InputActionTag, Value, this, Element.Value.ToState))
 				{
-					//UE_LOG(LogStateBase, Warning, TEXT("Transition Condition failed for transition %s"), *Element.Value.TransitionEvents->GetName());
 					break;
 				}
 				Element.Value.TransitionEvents->OnTransition(StateContext, InputActionTag, Value, this, Element.Value.ToState);
 			}
-			return Element.Value.ToState;
+			RelativeStateMachine->ChangeState(Element.Value.ToState);
+			return;
 		}
 	}
 
 	// If the InputActionTag is not in the transitions map, call the native and blueprint handle input events
-	FGameplayTag Result = NativeOnHandleInput(InputActionTag, Value);
-	if (Result.IsValid() && Result != StateTag)
-	{
-		return Result;
-	}
-
-	
-	Result = OnHandleInput(InputActionTag, Value);
-	if (Result.IsValid() && Result != StateTag)
-	{
-		return Result;
-	}
-
-	return StateTag;
+	NativeOnHandleInput(InputActionTag, Value);
+	OnHandleInput(InputActionTag, Value);
 }
 
-FGameplayTag UStateBase::Interrupt(const FGameplayTag Interrupter)
+void UStateBase::Interrupt(const FGameplayTag Interrupter)
 {
 	if (!bInitialized)
 	{
-		return StateTag;
+		return;
 	}
-	//UE_LOG(LogStateBase, Error, TEXT("State %s: Interrupting"), *GetName());
-	FGameplayTag Result = NativeOnInterrupt(Interrupter);
-	if (Result.IsValid() && Result != StateTag)
-	{
-		return Result;
-	}
-
-	Result = OnInterrupt(Interrupter);
-	if (Result.IsValid() && Result != StateTag)
-	{
-		return Result;
-	}
-
-	return StateTag;
+	
+	NativeOnInterrupt(Interrupter);
+	OnInterrupt(Interrupter);
 }

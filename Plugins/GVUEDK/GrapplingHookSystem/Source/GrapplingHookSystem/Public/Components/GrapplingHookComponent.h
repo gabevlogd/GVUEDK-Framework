@@ -4,19 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "Behaviours/MovementBehaviours/Base/GHMovementBehaviourBase.h"
-#include "Behaviours/SearchBehaviours/Base/GHSearchBehaviourBase.h"
+#include "Behaviours/MovementBehaviours/Base/GrapplingHookMovementBehaviour.h"
+#include "Behaviours/SearchBehaviours/Base/GrapplingHookTargetSeekingBehavior.h"
 #include "Interfaces/GrabPoint.h"
 #include "GrapplingHookComponent.generated.h"
 
-class UGHSearchBehaviourBase;
-class UGHMovementBehaviourBase;
+class UGrapplingHookTargetSeekingBehavior;
+class UGrapplingHookMovementBehaviour;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStartHooking);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHookMotionStarted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPerformHookMotion);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStopHooking);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInterruptHooking);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHookAttached);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FNearGrapplePoint);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FModeChanged, FGameplayTag, ModeTag);
 
 USTRUCT(BlueprintType, Blueprintable)
@@ -33,9 +34,9 @@ struct FGrapplingHookMode
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTag ModeTag;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
-	UGHMovementBehaviourBase* MovementBehaviour;
+	UGrapplingHookMovementBehaviour* MovementBehaviour;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
-	UGHSearchBehaviourBase* SearchBehaviour;
+	UGrapplingHookTargetSeekingBehavior* SearchBehaviour;
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -64,9 +65,14 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FModeChanged OnModeChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FNearGrapplePoint OnNearGrapplePoint;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TArray<FGrapplingHookMode> Modes;
+
+	bool bNearGrapplePointBroadcasted;
 
 private:
 	UPROPERTY()
@@ -107,6 +113,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetTargetGrabPointLocation() const { return bTargetAcquired ? TargetGrabPoint->Execute_GetLocation(TargetGrabPoint->_getUObject()) : FVector::ZeroVector; }
 	UFUNCTION(BlueprintCallable)
+	float GetTargetGrabPointMass() const { return bTargetAcquired ? TargetGrabPoint->Execute_GetMass(TargetGrabPoint->_getUObject()) : -1.f; }
+	UFUNCTION(BlueprintCallable)
 	FVector GetHookLocation() const { return HookLocation; }
 	
 	UFUNCTION(BlueprintCallable)
@@ -119,9 +127,9 @@ public:
 	FGrapplingHookMode GetMode(const FGameplayTag ModeTag) const { return ModeMap.Contains(ModeTag) ? ModeMap[ModeTag] : FGrapplingHookMode(); }
 	
 	UFUNCTION(BlueprintCallable)
-	UGHMovementBehaviourBase* GetCurrentMovementBehaviour() const { return CurrentMode.MovementBehaviour; }
+	UGrapplingHookMovementBehaviour* GetCurrentMovementBehaviour() const { return CurrentMode.MovementBehaviour; }
 	UFUNCTION(BlueprintCallable)
-	UGHSearchBehaviourBase* GetCurrentSearchBehaviour() const { return CurrentMode.SearchBehaviour; }
+	UGrapplingHookTargetSeekingBehavior* GetCurrentSearchBehaviour() const { return CurrentMode.SearchBehaviour; }
 
 	ACharacter* GetOwnerCharacter() const { return OwnerCharacter; }
 	IGrabPoint* GetTargetGrabPoint() const { return TargetGrabPoint; }

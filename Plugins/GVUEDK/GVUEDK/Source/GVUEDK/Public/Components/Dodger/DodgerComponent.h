@@ -7,13 +7,16 @@
 #include "DodgerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStartDodge);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDodge);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStopDodge);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDodgeCooldownComplete);
 
 #define GRAVITY 980.665f // cm/s^2
 
-UENUM(BlueprintType) 
+UENUM(BlueprintType)
 enum class EDefaultDirection : uint8
 {
 	CharacterForward UMETA(DisplayName = "Character Forward"),
@@ -73,38 +76,55 @@ private:
 
 	UPROPERTY()
 	ACharacter* Owner;
-	
+
 	FVector TargetVelocity;
 	FVector DefaultLocalDirection;
+	float DefaultSpeed;
 	const FTransform* RelativeDirectionTransform;
-	
+
 	FRotator TargetRotation;
 	FRotator CurrentRotation;
-	
+
 	float ElapsedTime = 0.f;
 	bool bIsDodging = false;
 	bool bIsCoolingDown = false;
 	bool bInitialized = false;
-	
+
 public:
 	UDodgerComponent();
+	
 	UFUNCTION(BlueprintCallable)
 	void StartDodge(FVector WorldDirection = FVector::ZeroVector);
+
+	UFUNCTION(BlueprintCallable)
+	void StartDodgeWithSpeed(FVector WorldDirection, const float InLinearSpeed);
+
 	UFUNCTION(BlueprintCallable)
 	void StopDodge();
+
 	UFUNCTION(BlueprintCallable)
 	bool IsCoolingDown() const { return bIsCoolingDown; }
+
+	UFUNCTION(BlueprintPure)
+	bool IsDodging() const { return bIsDodging; }
+
 	UFUNCTION(BlueprintCallable)
 	float GetCooldownDuration() const { return DodgeCooldown; }
-	
+
 private:
 	virtual void BeginPlay() override;
+	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	void Initialize();
+	
 	void PerformDodge(float DeltaTime);
+	
 	void InitDefaultDirection();
+	
 	void StartCooldown();
+	
 	float GetSpeed() const;
+	
 	FVector GetDefaultDirection() const;
-
 };

@@ -4,6 +4,7 @@
 #include "Subsystems/PopUpManagerSubsystem.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/PopUp.h"
 #include "Utility/PopUpSystemUtility.h"
 
 void UPopUpManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -17,8 +18,7 @@ void UPopUpManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 	if (UPopUpRegister* InPopUpRegister = PopUpSystemSettings->PopUpRegister.LoadSynchronous())
 	{
-		PopUpRegister = InPopUpRegister;
-		UE_LOG(LogPopUpManagerSubsystem, Display, TEXT("PopUpManagerSubsystem: Registered PopUpRegister: %s"), *PopUpRegister->GetName());
+		PopUpDataMap = InPopUpRegister->GetPopUpDataMap();
 	}
 	else
 	{
@@ -33,13 +33,13 @@ void UPopUpManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 UUserWidget* UPopUpManagerSubsystem::AddPopUp(const FGameplayTag& PopUpTag)
 {
-	if (!PopUpRegister)
+	if (PopUpDataMap.Num() == 0)
 	{
-		UE_LOG(LogPopUpManagerSubsystem, Error, TEXT("PopUpManagerSubsystem: PopUpRegister is not valid."));
+		UE_LOG(LogPopUpManagerSubsystem, Error, TEXT("PopUpManagerSubsystem: No PopUpData found in PopUpDataMap. Make sure to register a valid PopUpRegister in PopUpSystemSettings."));
 		return nullptr;
 	}
 
-	if (!PopUpRegister->PopUpRegisterItems.Contains(PopUpTag))
+	if (!PopUpDataMap.Contains(PopUpTag))
 	{
 		UE_LOG(LogPopUpManagerSubsystem, Error, TEXT("PopUpManagerSubsystem: PopUpTag %s is not registered."), *PopUpTag.ToString());
 		return nullptr;
@@ -52,13 +52,14 @@ UUserWidget* UPopUpManagerSubsystem::AddPopUp(const FGameplayTag& PopUpTag)
 	}
 
 	APlayerController* WidgetOwner = GetWorld()->GetFirstPlayerController();
-	const TSubclassOf<UUserWidget> WidgetClass = PopUpRegister->PopUpRegisterItems[PopUpTag];
+	const TSubclassOf<UUserWidget> WidgetClass = PopUpDataMap[PopUpTag].WidgetClass;
 	const FName WidgetName = FName(*PopUpTag.ToString());
 	
 	if (UUserWidget* PopUpWidget = CreateWidget<UUserWidget, APlayerController*>(WidgetOwner, WidgetClass, WidgetName))
 	{
 		PopUpWidget->AddToViewport();
 		ActivePopUps.Add(PopUpTag, PopUpWidget);
+		IPopUp::Execute_InitPopUp(PopUpWidget, PopUpDataMap[PopUpTag]);
 		return PopUpWidget;
 	}
 	else
@@ -76,15 +77,18 @@ void UPopUpManagerSubsystem::RemovePopUp(const FGameplayTag& PopUpTag)
 		return;
 	}
 
-	ActivePopUps[PopUpTag]->RemoveFromParent();
+	IPopUp::Execute_RemovePopUp(ActivePopUps[PopUpTag]);
 	ActivePopUps.Remove(PopUpTag);
 }
 
 void UPopUpManagerSubsystem::RemoveAllPopUps()
 {
-	for (const auto Element : ActivePopUps)
+	TArray<FGameplayTag> Keys;
+	ActivePopUps.GetKeys(Keys);
+
+	for (const auto& Key : Keys)
 	{
-		RemovePopUp(Element.Key);
+		RemovePopUp(Key);
 	}
 }
 

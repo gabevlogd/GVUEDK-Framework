@@ -14,6 +14,7 @@ class UWaveEventsHandler;
 DEFINE_LOG_CATEGORY_STATIC(LogWaveManagerSubsystem, All, All);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWaveStarted, const UWaveData*, WaveData, const int32, WaveIndex);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFirstWaveStarted, const UWaveData*, WaveData, const int32, WaveIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWaveCompleted, const UWaveData*, WaveData, const int32, WaveIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWaveCanceled, const UWaveData*, WaveData, const int32, WaveIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAllWavesCompleted, const UWaveData*, WaveData, const int32, LastWaveIndex);
@@ -27,6 +28,9 @@ class ENCOUNTERSYSTEM_API UWaveManager : public UWorldSubsystem
 
 public:
 
+	UPROPERTY(BlueprintAssignable, Category="WaveManager")
+	FOnFirstWaveStarted OnFirstWaveStarted;
+	
 	UPROPERTY(BlueprintAssignable, Category="WaveManager")
 	FOnWaveStarted OnWaveStarted; 
 
@@ -67,6 +71,8 @@ public:
 
 	float GetWaveRemainingTime() const;
 
+	float GetAllWavesRemainingTime() const;
+
 	UWaveData* GetCurrentWaveData() const;
 
 	int32 GetCurrentWaveIndex() const;
@@ -76,10 +82,14 @@ public:
 	FGuid GetCurrentWaveID() const { return CurrentWaveID; }
 
 	void WaveStarted();
+
+	bool IsAnyWaveActive() const { return bAnyActiveWave; }
 	
+	void CallCompletionCheckOnEnemyDeath(const bool ListenToEveryTracker = true);
+
 private:
 
-	void CallCompletionCheckOnEnemyDeath(const bool ListenToEveryTracker = true);
+	void CleanUpWaveManagerState();
 
 	void StopCallCompletionCheckOnEnemyDeath() const;
 
@@ -93,8 +103,8 @@ private:
 
 	void AllWavesCompleted();
 
-	UFUNCTION()
-	void RemoveEnemyTracker(const FGuid& WaveID);
+	//UFUNCTION()
+	//void RemoveEnemyTracker(const FGuid& WaveID);
 
 	UFUNCTION()
 	void CheckWaveCompletion(AActor* LastDeadEnemy);
@@ -106,6 +116,10 @@ private:
 
 	UFUNCTION()
 	void EnemyDead(AActor* DeadEnemy);
+
+	void ClearEnemyTrackers();
+
+	bool IsFirstWave() const;
 
 	UPROPERTY()
 	UWaveExecutionMode* CurrentWaveExecutionMode;
@@ -120,6 +134,9 @@ private:
 	FGuid CurrentWaveID;
 
 	UPROPERTY()
+	float StartTime;
+
+	UPROPERTY()
 	TMap<FGuid, UEnemyTracker*> EnemyTrackers;
 	
 	UPROPERTY()
@@ -131,4 +148,6 @@ private:
 	FTimerHandle NextWaveTimerHandle;
 
 	bool bHasPendingAsyncSpawns = false;
+
+	bool bAnyActiveWave = false;
 };
